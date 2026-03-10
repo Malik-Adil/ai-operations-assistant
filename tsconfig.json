@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "CommonJS",
+      "moduleResolution": "Node",
+      "baseUrl": ".",
+      "paths": {
+        "@queue/*": ["packages/queue/src/*"],
+        "@ai/*": ["packages/ai/src/*"],
+        "@database/*": ["packages/database/src/*"],
+        "@integrations/*": ["packages/integrations/src/*"]
+      }
+    }
+  }

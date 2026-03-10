@@ -1,13 +1,7 @@
 import { Worker } from "bullmq";
-import IORedis from "ioredis";
+import { connection, JobType, testJobSchema } from "@queue/queues";
+import { generateAIResponse } from "@ai/ai-service";
 
-const connection = new IORedis({
-  host: "127.0.0.1",
-  port: 6379,
-  maxRetriesPerRequest: null
-});
-
-console.log("Worker started and waiting for jobs...");
 
 const worker = new Worker(
   "ai-jobs",
@@ -15,26 +9,62 @@ const worker = new Worker(
     console.log(`Processing job: ${job.name}`);
     console.log("Job data:", job.data);
 
-    if (job.name === "test-job") {
-      const { message } = job.data;
+    switch (job.name) {
+      case JobType.TEST:
+        await handleTestJob(job.data);
+        break;
 
-      console.log("Worker received message:", message);
+      case JobType.AI_CHAT:
+        await handleAIChatJob(job.data);
+        break;
 
-      return {
-        processed: true,
-        response: `Processed message: ${message}`
-      };
+      default:
+        console.warn("Unknown job type:", job.name);
     }
-
-    return { status: "unknown job type" };
   },
-  { connection }
+  { connection: connection as any }
 );
+
+
+async function handleAIChatJob(data: any) {
+
+  const { message } = data;
+
+  console.log("AI job received:", message);
+
+  const result = await generateAIResponse(message);
+
+  console.log("AI result:", result.reply);
+
+}
+
+async function handleTestJob(data: any) {
+  const parsed = testJobSchema.safeParse(data);
+  if (!parsed.success) {
+    console.error("Invalid job data:", parsed.error);
+    throw new Error("Invalid job data");
+  }
+  const payload = parsed.data;
+  console.log("Worker received message:", payload.message);
+
+  if (payload.message === "fail") {
+    throw new Error("Simulated failure");
+  }
+}
 
 worker.on("completed", (job) => {
   console.log(`Job ${job.id} completed`);
 });
 
 worker.on("failed", (job, err) => {
-  console.error(`Job ${job?.id} failed`, err);
+  console.error(`Job ${job?.id} failed`);
+  console.error("Reason:", err.message);
+});
+
+worker.on("active", (job) => {
+  console.log(`Job ${job.id} started`);
+});
+
+worker.on("stalled", (jobId) => {
+  console.warn(`Job ${jobId} stalled`);
 });
