@@ -1,4 +1,5 @@
 export enum JobType {
     TEST = "TEST",
     AI_CHAT = "AI_CHAT",
+    SUPPORT_TICKET_ANALYSIS = "SUPPORT_TICKET_ANALYSIS"
   }

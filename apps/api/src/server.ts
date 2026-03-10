@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { addTestJob } from "@queue/queues";
 import { setupBullBoard } from "./bullboard";
 import aiRoutes from "./routes/ai";
+import supportTicketRoutes from "./routes/support";
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.get("/health", (req: Request, res: Response) => {
 
 
 app.use("/ai", aiRoutes);
+app.use("/support-ticket", supportTicketRoutes);
 
 app.post("/jobs/test", async (req: Request, res: Response) => {
   const { message } = req.body;

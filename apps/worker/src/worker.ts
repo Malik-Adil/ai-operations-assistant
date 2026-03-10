@@ -18,6 +18,10 @@ const worker = new Worker(
         await handleAIChatJob(job.data);
         break;
 
+      case JobType.SUPPORT_TICKET_ANALYSIS:
+        await handleSupportTicket(job);
+        break;
+
       default:
         console.warn("Unknown job type:", job.name);
     }
@@ -50,6 +54,20 @@ async function handleTestJob(data: any) {
   if (payload.message === "fail") {
     throw new Error("Simulated failure");
   }
+}
+
+async function handleSupportTicket(job: any) {
+
+  const { message, ticketId } = job.data;
+
+  console.log("Analyzing support ticket:", ticketId);
+
+  const result = await generateAIResponse(
+    `Analyze this support request and classify it: ${message}`
+  );
+
+  console.log("AI analysis:", result.reply);
+
 }
 
 worker.on("completed", (job) => {

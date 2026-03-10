@@ -31,3 +31,10 @@ export async function addAIChatJob(message: string) {
     createdAt: new Date().toISOString(),
   });
 }
+
+export async function addSupportTicketAnalysisJob(payload:{ticketId: string, message: string, customerEmail: string}) {
+  return addJob(JobType.SUPPORT_TICKET_ANALYSIS, {
+  ...payload,
+    createdAt: new Date().toISOString(),
+  });
+}

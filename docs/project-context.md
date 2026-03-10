@@ -2,14 +2,14 @@
 
 ## Project Goal
 
-Build a **production-style AI automation platform** to learn modern AI system architecture including:
+Build a production-style AI automation platform to learn modern AI system architecture including:
 
-* AI agents
-* background workers
-* queue systems
-* API integrations
-* RAG (knowledge retrieval)
-* automation workflows
+- AI agents
+- background workers
+- queue systems
+- API integrations
+- RAG (knowledge retrieval)
+- automation workflows
 
 The project is designed as a **hands-on learning system** that mirrors real-world AI SaaS architecture.
 
@@ -17,11 +17,13 @@ The project is designed as a **hands-on learning system** that mirrors real-worl
 
 # Current Architecture
 
-The system is a **monorepo using Turborepo + pnpm workspaces**.
-
-Architecture flow:
+The platform follows a distributed asynchronous architecture.
 
 Client → API → Queue → Worker → AI Processing
+
+Heavy work **never runs inside the API**.
+
+All long-running tasks are processed asynchronously by workers.
 
 ---
 
@@ -29,219 +31,375 @@ Client → API → Queue → Worker → AI Processing
 
 ## Monorepo
 
-* Turborepo
-* pnpm workspaces
+- Turborepo
+- pnpm workspaces
 
 ## Backend
 
-* Node.js
-* TypeScript
-* Express
+- Node.js
+- TypeScript
+- Express
 
 ## Frontend
 
-* Next.js
-* React
-* TailwindCSS
+- Next.js
+- React
+- TailwindCSS
 
 ## Infrastructure
 
-* Redis
-* BullMQ (job queues)
+- Redis
+- BullMQ
+- Bull Board (Queue Monitoring)
 
-## AI Layer (planned)
+## AI Layer
 
-* Claude API
-* LangChain
-* Vector database (RAG)
+Current:
+
+- AI service abstraction
+- AI chat job processing
+
+Planned:
+
+- Claude API integration
+- Prompt management
+- Tool calling
+- Agent workflows
 
 ---
 
 # Repository Structure
 
-```
 ai-operations-assistant
+
+apps
 │
-├── apps
-│   ├── api        # Backend REST API
-│   ├── web        # Next.js frontend dashboard
-│   └── worker     # Background job processor
+├── api
+│   ├── routes
+│   │   ├── ai.ts
+│   │   ├── jobs.ts
+│   │   └── jobs-result.ts
+│   │
+│   ├── bullboard.ts
+│   ├── job-store.ts
+│   └── server.ts
 │
-├── packages
-│   ├── ai             # AI services and agents (future)
-│   ├── database       # Database layer (future)
-│   ├── queue          # BullMQ queues and Redis connection
-│   └── integrations   # External API integrations (future)
+├── web
+│   └── Next.js dashboard
 │
-├── docs
-│   ├── project-context.md
-│   └── learning-log.md
+└── worker
+    └── background job processor
+
+
+packages
 │
-├── turbo.json
-├── pnpm-workspace.yaml
-└── package.json
-```
+├── ai
+│   ├── src
+│   │   ├── ai-service.ts
+│   │   └── index.ts
+│
+├── queue
+│   ├── src
+│   │   ├── redis.ts
+│   │   ├── producer.ts
+│   │   ├── job-types.ts
+│   │   └── job-schemas.ts
+│
+├── database (future)
+│
+└── integrations (future)
+
+
+docs
+│
+├── project-context.md
+└── learning-log.md
+
+
+turbo.json
+pnpm-workspace.yaml
+package.json
 
 ---
 
-# Completed So Far
+# System Components
 
-Infrastructure setup:
+## API Service
 
-* Turborepo monorepo configured
-* pnpm workspace configured
-* Next.js frontend created
-* Express API server created
-* Worker service created
-* Redis queue infrastructure configured
-* BullMQ worker processing jobs
-* Shared queue package created
+Responsibilities:
 
-Development environment:
+- receive client requests
+- create background jobs
+- expose monitoring endpoints
+- expose queue dashboard
+- return job status
 
-```
-pnpm dev
-```
+Endpoints:
 
-Runs:
-
-* API server
-* Worker
-* Next.js frontend
-
----
-
-# Current Features
-
-### API
-
-Basic health endpoint:
-
-```
 GET /health
-```
-
-Returns:
-
-```
-{ "status": "ok" }
-```
-
----
-
-### Worker
-
-Worker listens to BullMQ queue:
-
-```
-ai-jobs
-```
-
-Worker processes jobs asynchronously.
-
----
-
-# Current Learning Focus
-
-Understanding how **distributed AI systems process tasks asynchronously**.
-
-Core concept:
-
-API should not perform heavy tasks directly.
-
-Instead:
-
-API → Queue → Worker → Processing
-
----
-
-# Next Feature To Build
-
-Queue Producer.
-
-API will send jobs to the worker.
-
-Example flow:
-
-```
 POST /jobs/test
-```
-
-Payload:
-
-```
-{
-  "message": "Hello Worker"
-}
-```
-
-Flow:
-
-Client → API → Redis Queue → Worker → Process Job
+POST /ai/chat
+GET /jobs/:jobId
+GET /admin/queues
 
 ---
 
-# Future Features
+# Queue System
 
-## AI Layer
+Queue technology:
 
-* AI chat endpoint
-* Claude API integration
-* prompt system
-* AI service module
+BullMQ + Redis
 
----
+Queue name:
 
-## Automation
+ai-jobs
 
-* email processing
-* Slack AI assistant
-* task generation
-* workflow automation
+Capabilities:
 
----
-
-## Knowledge System (RAG)
-
-* document upload
-* embeddings
-* vector search
-* AI question answering
+- job retries
+- exponential backoff
+- failure handling
+- queue monitoring
+- async background processing
 
 ---
 
-# Development Rules
+# Worker Service
 
-Whenever creating files follow this rule:
+Worker responsibilities:
 
-FILE
-WHY IT EXISTS
-WHERE IT IS USED
-FUTURE FEATURES
-CODE
+- listen to queue
+- route jobs
+- validate payload
+- execute job handler
+- retry failed jobs
+- store result
+
+Worker architecture:
+
+Worker
+  ↓
+Job Router
+  ↓
+Job Handler
+  ↓
+AI Service
+
+---
+
+# Job Type System
+
+Job types are defined centrally.
+
+JobType
+
+Current types:
+
+TEST
+AI_CHAT
+
+Future job types:
+
+DOCUMENT_EMBED
+RAG_QUERY
+EMAIL_AUTOMATION
+SLACK_ASSISTANT
+WORKFLOW_STEP
+
+---
+
+# Job Schema Validation
+
+Uses:
+
+Zod
+
+Purpose:
+
+- validate job payloads
+- prevent worker crashes
+- enforce job contracts
+
+Example:
+
+testJobSchema
+
+---
+
+# Retry System
+
+Queue jobs automatically retry.
+
+Configuration:
+
+attempts: 3
+backoff: exponential
+delay: 2000ms
+
+Protects against:
+
+- API failures
+- network errors
+- temporary outages
+
+---
+
+# Queue Monitoring
+
+Monitoring tool:
+
+Bull Board
+
+Dashboard URL:
+
+http://localhost:4000/admin/queues
+
+Allows monitoring of:
+
+- waiting jobs
+- active jobs
+- completed jobs
+- failed jobs
+- retries
+
+---
+
+# AI Processing Layer
+
+Location:
+
+packages/ai
+
+Purpose:
+
+Central interface for AI providers.
+
+Current implementation:
+
+generateAIResponse()
+
+Currently a mock AI service.
+
+Future providers:
+
+- Claude API
+- OpenAI
+- Local models
+
+---
+
+# AI Job Flow
+
+Client
+  ↓
+POST /ai/chat
+  ↓
+API queues job
+  ↓
+Worker receives job
+  ↓
+AI Service generates response
+  ↓
+Result stored
+  ↓
+Client fetches result
+
+---
+
+# Job Result System
+
+Current storage:
+
+In-memory Map
+
+Used by:
+
+GET /jobs/:jobId
+
+Future storage:
+
+Redis
+PostgreSQL
+MongoDB
 
 ---
 
 # Current Project Status
 
-Infrastructure setup completed.
+Completed:
 
-Next step:
-
-Implement **API → Queue → Worker communication**.
+- Turborepo monorepo setup
+- pnpm workspaces
+- API server
+- worker service
+- queue system
+- job routing
+- job schema validation
+- retry system
+- queue monitoring dashboard
+- AI job pipeline
 
 ---
 
-# How to Run the Project
+# Next Features
 
-Start development:
+## Claude API Integration
 
-```
-pnpm dev
-```
+Replace mock AI service with real LLM.
 
-Services started:
+Worker
+↓
+AI Service
+↓
+Claude API
 
-* API → http://localhost:4000
-* Web → http://localhost:3000
-* Worker → background processing
+---
+
+## Prompt System
+
+Location:
+
+packages/ai/prompts
+
+Purpose:
+
+centralized prompt templates
+
+---
+
+## Tool Calling
+
+Allow AI to trigger system actions.
+
+Examples:
+
+send_email
+create_task
+query_database
+
+---
+
+## RAG System
+
+Add knowledge retrieval capabilities.
+
+Components:
+
+document ingestion
+embeddings
+vector database
+AI retrieval
+
+---
+
+# Long-Term Goal
+
+Transform the platform into a **full AI automation engine** capable of:
+
+- AI assistants
+- workflow automation
+- document processing
+- knowledge retrieval
+- agent-based systems
+
+---
