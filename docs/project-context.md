@@ -2,24 +2,39 @@
 
 ## Project Goal
 
-Build a production-style AI automation platform to learn modern AI system architecture including:
+Build a **production-style AI automation platform** to learn modern AI system architecture including:
 
 - AI agents
 - background workers
 - queue systems
 - API integrations
-- RAG (knowledge retrieval)
+- structured AI outputs
 - automation workflows
+- RAG (knowledge retrieval)
 
 The project is designed as a **hands-on learning system** that mirrors real-world AI SaaS architecture.
 
 ---
 
-# Current Architecture
+# System Architecture
 
-The platform follows a distributed asynchronous architecture.
+The platform follows a **distributed asynchronous architecture**.
 
-Client → API → Queue → Worker → AI Processing
+Client
+↓
+API Server
+↓
+Queue Producer
+↓
+Redis Queue (BullMQ)
+↓
+Worker
+↓
+Job Router
+↓
+Job Handler
+↓
+AI Service
 
 Heavy work **never runs inside the API**.
 
@@ -57,14 +72,15 @@ All long-running tasks are processed asynchronously by workers.
 Current:
 
 - AI service abstraction
-- AI chat job processing
+- AI automation jobs
+- structured AI outputs
 
 Planned:
 
 - Claude API integration
-- Prompt management
-- Tool calling
-- Agent workflows
+- prompt management
+- tool calling
+- agent workflows
 
 ---
 
@@ -78,7 +94,8 @@ apps
 │   ├── routes
 │   │   ├── ai.ts
 │   │   ├── jobs.ts
-│   │   └── jobs-result.ts
+│   │   ├── jobs-result.ts
+│   │   └── support-ticket.ts
 │   │
 │   ├── bullboard.ts
 │   ├── job-store.ts
@@ -88,22 +105,34 @@ apps
 │   └── Next.js dashboard
 │
 └── worker
-    └── background job processor
+    └── src
+        │
+        ├── handlers
+        │   ├── ai-chat.handler.ts
+        │   ├── support-ticket.handler.ts
+        │   └── test.handler.ts
+        │
+        ├── router.ts
+        └── index.ts
 
 
 packages
 │
 ├── ai
-│   ├── src
-│   │   ├── ai-service.ts
-│   │   └── index.ts
+│   └── src
+│       │
+│       ├── ai-service.ts
+│       ├── schemas
+│       │   └── support-ticket.schema.ts
+│       └── index.ts
 │
 ├── queue
-│   ├── src
-│   │   ├── redis.ts
-│   │   ├── producer.ts
-│   │   ├── job-types.ts
-│   │   └── job-schemas.ts
+│   └── src
+│       │
+│       ├── redis.ts
+│       ├── producer.ts
+│       ├── job-types.ts
+│       └── job-schemas.ts
 │
 ├── database (future)
 │
@@ -114,7 +143,6 @@ docs
 │
 ├── project-context.md
 └── learning-log.md
-
 
 turbo.json
 pnpm-workspace.yaml
@@ -130,16 +158,22 @@ Responsibilities:
 
 - receive client requests
 - create background jobs
-- expose monitoring endpoints
 - expose queue dashboard
 - return job status
+- expose automation endpoints
 
 Endpoints:
 
 GET /health
+
 POST /jobs/test
+
 POST /ai/chat
+
+POST /support-ticket
+
 GET /jobs/:jobId
+
 GET /admin/queues
 
 ---
@@ -160,7 +194,15 @@ Capabilities:
 - exponential backoff
 - failure handling
 - queue monitoring
-- async background processing
+- async processing
+
+Configuration:
+
+attempts: 3
+
+backoff: exponential
+
+delay: 2000ms
 
 ---
 
@@ -171,19 +213,39 @@ Worker responsibilities:
 - listen to queue
 - route jobs
 - validate payload
-- execute job handler
+- execute job handlers
 - retry failed jobs
-- store result
+- log processing
 
 Worker architecture:
 
 Worker
-  ↓
-Job Router
-  ↓
-Job Handler
-  ↓
-AI Service
+↓
+Router
+↓
+Handler
+
+---
+
+# Worker Handler System
+
+Job handlers are separated into modules.
+
+handlers
+│
+├── ai-chat.handler.ts
+├── support-ticket.handler.ts
+└── test.handler.ts
+
+This architecture allows the system to scale to many job types.
+
+Future handlers may include:
+
+document-embed.handler.ts
+
+email-processor.handler.ts
+
+workflow-agent.handler.ts
 
 ---
 
@@ -193,24 +255,31 @@ Job types are defined centrally.
 
 JobType
 
-Current types:
+Current job types:
 
 TEST
+
 AI_CHAT
+
+SUPPORT_TICKET_ANALYSIS
 
 Future job types:
 
 DOCUMENT_EMBED
+
 RAG_QUERY
+
 EMAIL_AUTOMATION
-SLACK_ASSISTANT
+
 WORKFLOW_STEP
+
+SLACK_ASSISTANT
 
 ---
 
 # Job Schema Validation
 
-Uses:
+Payload validation uses:
 
 Zod
 
@@ -220,27 +289,95 @@ Purpose:
 - prevent worker crashes
 - enforce job contracts
 
-Example:
+Example schemas:
 
 testJobSchema
 
+supportTicketSchema
+
 ---
 
-# Retry System
+# AI Processing Layer
 
-Queue jobs automatically retry.
+Location:
 
-Configuration:
+packages/ai
 
-attempts: 3
-backoff: exponential
-delay: 2000ms
+Purpose:
 
-Protects against:
+Central interface for AI providers.
 
-- API failures
-- network errors
-- temporary outages
+Current AI capabilities:
+
+generateAIResponse()
+
+analyzeSupportTicket()
+
+Currently uses **mock AI responses**.
+
+Future providers:
+
+Claude API
+
+OpenAI
+
+local models
+
+---
+
+# Structured AI Output System
+
+AI responses are validated using schemas.
+
+Example AI output:
+
+{
+  "category": "integration_issue",
+  "priority": "medium",
+  "responseDraft": "Please verify your Shopify API credentials."
+}
+
+Benefits:
+
+- machine-readable AI responses
+- automation triggers
+- workflow decision making
+
+---
+
+# AI Automation Job
+
+Support Ticket Analysis
+
+Example flow:
+
+Client
+↓
+POST /support-ticket
+↓
+API queues job
+↓
+Worker receives job
+↓
+AI analyzes message
+↓
+Structured result returned
+
+Example request:
+
+{
+  "ticketId": "T-1001",
+  "message": "I can't connect my Shopify store",
+  "customerEmail": "user@example.com"
+}
+
+Example AI output:
+
+{
+  "category": "integration_issue",
+  "priority": "medium",
+  "responseDraft": "Please check your Shopify API credentials."
+}
 
 ---
 
@@ -264,80 +401,21 @@ Allows monitoring of:
 
 ---
 
-# AI Processing Layer
+# Current System Status
 
-Location:
+Infrastructure completed:
 
-packages/ai
-
-Purpose:
-
-Central interface for AI providers.
-
-Current implementation:
-
-generateAIResponse()
-
-Currently a mock AI service.
-
-Future providers:
-
-- Claude API
-- OpenAI
-- Local models
-
----
-
-# AI Job Flow
-
-Client
-  ↓
-POST /ai/chat
-  ↓
-API queues job
-  ↓
-Worker receives job
-  ↓
-AI Service generates response
-  ↓
-Result stored
-  ↓
-Client fetches result
-
----
-
-# Job Result System
-
-Current storage:
-
-In-memory Map
-
-Used by:
-
-GET /jobs/:jobId
-
-Future storage:
-
-Redis
-PostgreSQL
-MongoDB
-
----
-
-# Current Project Status
-
-Completed:
-
-- Turborepo monorepo setup
-- pnpm workspaces
+- monorepo architecture
 - API server
 - worker service
 - queue system
 - job routing
-- job schema validation
+- job handlers
+- schema validation
 - retry system
-- queue monitoring dashboard
-- AI job pipeline
+- queue monitoring
+- AI job processing
+- structured AI outputs
 
 ---
 
@@ -352,6 +430,8 @@ Worker
 AI Service
 ↓
 Claude API
+↓
+Structured JSON response
 
 ---
 
@@ -369,12 +449,14 @@ centralized prompt templates
 
 ## Tool Calling
 
-Allow AI to trigger system actions.
+Allow AI to trigger actions.
 
 Examples:
 
 send_email
+
 create_task
+
 query_database
 
 ---
@@ -386,8 +468,11 @@ Add knowledge retrieval capabilities.
 Components:
 
 document ingestion
+
 embeddings
+
 vector database
+
 AI retrieval
 
 ---
