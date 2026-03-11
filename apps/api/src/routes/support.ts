@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { addSupportTicketAnalysisJob } from "@queue/queues";
+import { createJob } from "@repo/job-store";
 
 const router = Router();
 
@@ -12,6 +13,9 @@ router.post("/", async (req, res) => {
     message,
     customerEmail
   });
+
+  createJob(job.id);
+
 
   res.json({
     status: "queued",

@@ -6,9 +6,10 @@
       "baseUrl": ".",
       "paths": {
         "@queue/*": ["packages/queue/src/*"],
-        "@ai/*": ["packages/ai/src/*"],
+        "@ai/*": ["packages/ai/*"],
         "@database/*": ["packages/database/src/*"],
-        "@integrations/*": ["packages/integrations/src/*"]
+        "@integrations/*": ["packages/integrations/src/*"],
+        "@repo/job-store": ["packages/job-store/src/index"]
       }
     }
   }

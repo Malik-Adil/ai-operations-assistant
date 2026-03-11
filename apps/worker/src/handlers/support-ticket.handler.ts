@@ -1,7 +1,7 @@
 import {
     analyzeSupportTicket,
     supportTicketAIResponseSchema
-  } from "@ai/index";
+  } from "packages/ai/index";
   
   export async function handleSupportTicketJob(job: any) {
   

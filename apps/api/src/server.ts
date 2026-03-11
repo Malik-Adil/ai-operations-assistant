@@ -3,6 +3,7 @@ import { addTestJob } from "@queue/queues";
 import { setupBullBoard } from "./bullboard";
 import aiRoutes from "./routes/ai";
 import supportTicketRoutes from "./routes/support";
+import jobsResultRoutes from "./routes/jobs-result";
 
 const app = express();
 
@@ -16,17 +17,7 @@ app.get("/health", (req: Request, res: Response) => {
 
 app.use("/ai", aiRoutes);
 app.use("/support-ticket", supportTicketRoutes);
-
-app.post("/jobs/test", async (req: Request, res: Response) => {
-  const { message } = req.body;
-
-  const jobId = await addTestJob(message);
-
-  res.json({
-    status: "job added",
-    jobId
-  });
-});
+app.use("/jobs", jobsResultRoutes);
 
 const PORT = 4000;
 

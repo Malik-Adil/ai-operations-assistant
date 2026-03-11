@@ -1,4 +1,4 @@
-import { generateAIResponse } from "@ai/ai-service";
+import { generateAIResponse } from "packages/ai/ai-service";
 
 export async function handleAIChatJob(job: any) {
 

@@ -1,11 +1,12 @@
 import { Worker } from "bullmq";
 import { connection } from "@queue/queues";
 import { routeJob } from "./router";
-
+import { startJob, completeJob, failJob } from "@repo/job-store";
 
 const worker = new Worker(
   "ai-jobs",
   async (job) => {
+    startJob(job.id);
     console.log(`Processing job: ${job.name}`);
     console.log("Job data:", job.data);
     
@@ -14,11 +15,15 @@ const worker = new Worker(
   { connection: connection as any }
 );
 
+
+
 worker.on("completed", (job) => {
+  completeJob(job.id, job.data);
   console.log(`Job ${job.id} completed`);
 });
 
 worker.on("failed", (job, err) => {
+  failJob(job.id, err.message);
   console.error(`Job ${job?.id} failed`);
   console.error("Reason:", err.message);
 });
