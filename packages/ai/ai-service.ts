@@ -1,5 +1,6 @@
 import { getAIProvider } from "./providers/provider-factory";
 import { supportTicketPrompt } from "./prompts/support-ticket.prompt";
+import { agentRunner } from "./agent-runner";
 
   export async function analyzeSupportTicket(message: string) {
 
@@ -14,8 +15,22 @@ import { supportTicketPrompt } from "./prompts/support-ticket.prompt";
     `;
    
 
-    const response = await provider.generate(prompt);
-    
-    return JSON.parse(response);
+    const response = await provider.generate(prompt, { tools: true });
+    console.log("========= response ========",response);
+    let text = response.content;
+ text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+ console.log('========= Text =========',text);
+ 
+  return JSON.parse(text);
   
   }
+
+  export class AIService {
+
+    async runAgent(prompt: string) {
+      return agentRunner.run(prompt)
+    }
+  
+  }
+  
+  export const aiService = new AIService()

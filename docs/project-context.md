@@ -1,44 +1,52 @@
-# AI Operations Assistant — Project Context
+# AI Operations Assistant — Project Context (Updated)
 
 ## Project Goal
 
-Build a **production-style AI automation platform** to learn modern AI system architecture including:
+Build a **production-style AI automation platform** to learn modern AI architecture used in real systems.
+
+The project focuses on understanding:
 
 - AI agents
 - background workers
+- asynchronous processing
 - queue systems
-- API integrations
+- tool execution
 - structured AI outputs
 - automation workflows
-- RAG (knowledge retrieval)
+- RAG (future)
 
-The project is designed as a **hands-on learning system** that mirrors real-world AI SaaS architecture.
+The system is designed as a **learning project that mirrors real AI SaaS infrastructure**.
 
 ---
 
 # System Architecture
 
-The platform follows a **distributed asynchronous architecture**.
+The system follows an **asynchronous worker architecture**.
 
-Client
-↓
-API Server
-↓
-Queue Producer
-↓
-Redis Queue (BullMQ)
-↓
-Worker
-↓
-Job Router
-↓
-Job Handler
-↓
-AI Service
+Client  
+↓  
+API Server  
+↓  
+Queue Producer  
+↓  
+Redis Queue (BullMQ)  
+↓  
+Worker  
+↓  
+Job Router  
+↓  
+Job Handler  
+↓  
+AI Service  
+↓  
+AI Provider  
+↓  
+LLM API (Claude)
 
-Heavy work **never runs inside the API**.
+Important design rule:
 
-All long-running tasks are processed asynchronously by workers.
+Heavy processing **never runs inside the API**.  
+All AI processing happens in **background workers**.
 
 ---
 
@@ -49,11 +57,15 @@ All long-running tasks are processed asynchronously by workers.
 - Turborepo
 - pnpm workspaces
 
+---
+
 ## Backend
 
 - Node.js
 - TypeScript
 - Express
+
+---
 
 ## Frontend
 
@@ -61,31 +73,29 @@ All long-running tasks are processed asynchronously by workers.
 - React
 - TailwindCSS
 
+---
+
 ## Infrastructure
 
 - Redis
 - BullMQ
 - Bull Board (Queue Monitoring)
 
+---
+
 ## AI Layer
 
-Current:
-
-- AI service abstraction
-- AI automation jobs
-- structured AI outputs
-
-Planned:
-
-- Claude API integration
-- prompt management
-- tool calling
-- agent workflows
+- Claude API (Anthropic)
+- AI Service abstraction
+- Prompt management
+- Structured outputs
+- Provider factory
 
 ---
 
 # Repository Structure
 
+```
 ai-operations-assistant
 
 apps
@@ -98,7 +108,6 @@ apps
 │   │   └── support-ticket.ts
 │   │
 │   ├── bullboard.ts
-│   ├── job-store.ts
 │   └── server.ts
 │
 ├── web
@@ -113,7 +122,7 @@ apps
         │   └── test.handler.ts
         │
         ├── router.ts
-        └── index.ts
+        └── worker.ts
 
 
 packages
@@ -122,9 +131,23 @@ packages
 │   └── src
 │       │
 │       ├── ai-service.ts
+│       │
+│       ├── providers
+│       │   ├── ai-provider.ts
+│       │   ├── mock-provider.ts
+│       │   ├── claude-provider.ts
+│       │   └── provider-factory.ts
+│       │
+│       ├── prompts
+│       │   └── support-ticket.prompt.ts
+│       │
 │       ├── schemas
 │       │   └── support-ticket.schema.ts
-│       └── index.ts
+│       │
+│       └── tools
+│           ├── tool.ts
+│           ├── tool-registry.ts
+│           └── create-task.tool.ts
 │
 ├── queue
 │   └── src
@@ -134,59 +157,26 @@ packages
 │       ├── job-types.ts
 │       └── job-schemas.ts
 │
-├── database (future)
-│
-└── integrations (future)
-
-
-docs
-│
-├── project-context.md
-└── learning-log.md
-
-turbo.json
-pnpm-workspace.yaml
-package.json
-
----
-
-# System Components
-
-## API Service
-
-Responsibilities:
-
-- receive client requests
-- create background jobs
-- expose queue dashboard
-- return job status
-- expose automation endpoints
-
-Endpoints:
-
-GET /health
-
-POST /jobs/test
-
-POST /ai/chat
-
-POST /support-ticket
-
-GET /jobs/:jobId
-
-GET /admin/queues
+├── job-store
+│   └── src
+│       │
+│       ├── job-store.ts
+│       └── index.ts
+```
 
 ---
 
 # Queue System
 
-Queue technology:
+Technology:
 
 BullMQ + Redis
 
 Queue name:
 
+```
 ai-jobs
+```
 
 Capabilities:
 
@@ -196,295 +186,366 @@ Capabilities:
 - queue monitoring
 - async processing
 
-Configuration:
+Queue dashboard:
 
-attempts: 3
-
-backoff: exponential
-
-delay: 2000ms
+```
+http://localhost:4000/admin/queues
+```
 
 ---
 
-# Worker Service
+# Worker System
 
 Worker responsibilities:
 
 - listen to queue
 - route jobs
-- validate payload
-- execute job handlers
-- retry failed jobs
-- log processing
+- execute handlers
+- log results
 
-Worker architecture:
+Handlers implemented:
 
-Worker
-↓
-Router
-↓
-Handler
+```
+support-ticket.handler.ts
+test.handler.ts
+ai-chat.handler.ts
+```
 
 ---
 
-# Worker Handler System
+# AI Provider System
 
-Job handlers are separated into modules.
+Architecture:
 
-handlers
-│
-├── ai-chat.handler.ts
-├── support-ticket.handler.ts
-└── test.handler.ts
+AI Service  
+↓  
+Provider Factory  
+↓  
+AI Provider Interface  
+↓  
+Claude Provider / Mock Provider
 
-This architecture allows the system to scale to many job types.
+Environment configuration:
 
-Future handlers may include:
-
-document-embed.handler.ts
-
-email-processor.handler.ts
-
-workflow-agent.handler.ts
-
----
-
-# Job Type System
-
-Job types are defined centrally.
-
-JobType
-
-Current job types:
-
-TEST
-
-AI_CHAT
-
-SUPPORT_TICKET_ANALYSIS
-
-Future job types:
-
-DOCUMENT_EMBED
-
-RAG_QUERY
-
-EMAIL_AUTOMATION
-
-WORKFLOW_STEP
-
-SLACK_ASSISTANT
+```
+AI_PROVIDER=claude
+ANTHROPIC_API_KEY=sk-ant-xxxx
+```
 
 ---
 
-# Job Schema Validation
-
-Payload validation uses:
-
-Zod
-
-Purpose:
-
-- validate job payloads
-- prevent worker crashes
-- enforce job contracts
-
-Example schemas:
-
-testJobSchema
-
-supportTicketSchema
-
----
-
-# AI Processing Layer
+# Prompt System
 
 Location:
 
-packages/ai
+```
+packages/ai/prompts/support-ticket.prompt.ts
+```
 
 Purpose:
 
-Central interface for AI providers.
+Centralized prompt templates for AI operations.
 
-Current AI capabilities:
+Example prompt behavior:
 
-generateAIResponse()
-
-analyzeSupportTicket()
-
-Currently uses **mock AI responses**.
-
-Future providers:
-
-Claude API
-
-OpenAI
-
-local models
+- classify support ticket
+- determine priority
+- generate response draft
+- return JSON
 
 ---
 
-# Structured AI Output System
+# Structured Output System
 
-AI responses are validated using schemas.
+AI responses return **machine-readable JSON**.
 
-Example AI output:
+Example output:
 
+```json
 {
   "category": "integration_issue",
-  "priority": "medium",
+  "priority": "high",
   "responseDraft": "Please verify your Shopify API credentials."
 }
+```
 
-Benefits:
+Validation:
 
-- machine-readable AI responses
-- automation triggers
-- workflow decision making
+```
+Zod schema validation
+```
+
+Location:
+
+```
+packages/ai/schemas/support-ticket.schema.ts
+```
 
 ---
 
-# AI Automation Job
+# Claude API Integration
 
-Support Ticket Analysis
+Provider location:
 
-Example flow:
+```
+packages/ai/providers/claude-provider.ts
+```
 
-Client
-↓
-POST /support-ticket
-↓
-API queues job
-↓
-Worker receives job
-↓
-AI analyzes message
-↓
-Structured result returned
+Model:
 
-Example request:
+```
+claude-3-haiku-latest
+```
 
+Typical configuration:
+
+```
+max_tokens: 300
+```
+
+Optimization:
+
+- short prompts
+- short responses
+- avoid unnecessary tools
+
+---
+
+# Issues Solved During Development
+
+### Markdown JSON Responses
+
+Claude sometimes returns:
+
+```json
+{ ... }
+```
+
+Solution:
+
+Strip markdown fences before `JSON.parse`.
+
+---
+
+### Token Limit Truncation
+
+Long responses caused incomplete JSON.
+
+Solution:
+
+- increase `max_tokens`
+- limit response length in prompt
+
+---
+
+### Retry Multiplying Token Usage
+
+BullMQ retries caused multiple AI calls.
+
+Example:
+
+```
+attempts: 3
+```
+
+Temporary development fix:
+
+```
+attempts: 1
+```
+
+---
+
+# Current Working Pipeline
+
+Support ticket pipeline:
+
+POST /support-ticket  
+↓  
+API  
+↓  
+Queue  
+↓  
+Worker  
+↓  
+support-ticket.handler  
+↓  
+AI Service  
+↓  
+Claude API  
+↓  
+JSON parsing  
+↓  
+Zod validation  
+↓  
+Structured result
+
+Example worker output:
+
+```
+AI structured result:
 {
-  "ticketId": "T-1001",
-  "message": "I can't connect my Shopify store",
-  "customerEmail": "user@example.com"
+  category: "integration_issue",
+  priority: "high",
+  responseDraft: "We'd like to help you connect your Shopify store..."
 }
-
-Example AI output:
-
-{
-  "category": "integration_issue",
-  "priority": "medium",
-  "responseDraft": "Please check your Shopify API credentials."
-}
+```
 
 ---
 
-# Queue Monitoring
+# Tool System (Foundation Built)
 
-Monitoring tool:
+Components created:
 
-Bull Board
+- Tool interface
+- Tool registry
+- Tool executor
+- create_task tool
 
-Dashboard URL:
+Example future tools:
 
-http://localhost:4000/admin/queues
+- create_task
+- send_email
+- query_database
+- post_to_slack
 
-Allows monitoring of:
-
-- waiting jobs
-- active jobs
-- completed jobs
-- failed jobs
-- retries
+Tools are currently **disabled for classification tasks** to reduce token usage.
 
 ---
 
-# Current System Status
+# System Status
 
 Infrastructure completed:
 
-- monorepo architecture
+- monorepo
 - API server
 - worker service
 - queue system
 - job routing
 - job handlers
 - schema validation
-- retry system
+- AI provider abstraction
+- Claude integration
+- prompt management
+- structured outputs
+- tool architecture
+- job result storage
 - queue monitoring
-- AI job processing
-- structured AI outputs
 
 ---
 
-# Next Features
+# Current Capability
 
-## Claude API Integration
+The system supports:
 
-Replace mock AI service with real LLM.
+- AI classification
+- structured analysis
+- background AI jobs
+- async processing
+- worker execution
 
-Worker
-↓
-AI Service
-↓
-Claude API
-↓
-Structured JSON response
+The platform is now a **working AI analysis system**.
 
 ---
 
-## Prompt System
+# Next Feature
 
-Location:
+## Automation Rules Engine
 
-packages/ai/prompts
+Goal:
 
-Purpose:
+Convert AI results into actions.
 
-centralized prompt templates
+Example workflow:
+
+Support ticket  
+↓  
+AI classification  
+↓  
+priority = high  
+↓  
+create_task  
+↓  
+assign engineer
+
+Architecture:
+
+AI Result  
+↓  
+Rules Engine  
+↓  
+Tool Execution  
+↓  
+Automation Action
 
 ---
 
-## Tool Calling
+# Future Features
 
-Allow AI to trigger actions.
+### AI Agents
 
-Examples:
+Multi-step reasoning:
 
-send_email
-
-create_task
-
-query_database
+AI  
+↓  
+tool  
+↓  
+AI  
+↓  
+tool  
 
 ---
 
-## RAG System
+### Workflow Automation
 
-Add knowledge retrieval capabilities.
+Example:
+
+email received  
+↓  
+AI classification  
+↓  
+create ticket  
+↓  
+send reply  
+
+---
+
+### RAG System
 
 Components:
 
-document ingestion
-
-embeddings
-
-vector database
-
-AI retrieval
+- document ingestion
+- embeddings
+- vector database
+- context retrieval
 
 ---
 
-# Long-Term Goal
+### Memory System
 
-Transform the platform into a **full AI automation engine** capable of:
-
-- AI assistants
-- workflow automation
-- document processing
-- knowledge retrieval
-- agent-based systems
+Allow AI to remember previous interactions.
 
 ---
+
+# Current Next Task
+
+Implement the **Automation Rules Engine**.
+
+Example rule:
+
+```
+if priority === "high"
+   create_task()
+```
+
+This will transform the system from:
+
+```
+AI analysis platform
+```
+
+into:
+
+```
+AI automation platform
+```

@@ -1,5 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config({path: "../../.env"});
+
 import express, { Request, Response } from "express";
-import { addTestJob } from "@queue/queues";
 import { setupBullBoard } from "./bullboard";
 import aiRoutes from "./routes/ai";
 import supportTicketRoutes from "./routes/support";

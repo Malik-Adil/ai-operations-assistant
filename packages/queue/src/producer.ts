@@ -8,7 +8,7 @@ export const aiQueue = new Queue("ai-jobs", {
 
 export async function addJob(type: JobType, payload: any) {
   return aiQueue.add(type, payload,{
-    attempts: 3,
+    attempts: 1,
     backoff: {
       type: "exponential",
       delay: 2000,

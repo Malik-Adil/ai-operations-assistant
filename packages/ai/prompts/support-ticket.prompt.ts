@@ -1,9 +1,9 @@
 export const supportTicketPrompt = `
 You are an AI support assistant.
 
-Your task is to analyze a customer support ticket.
+Analyze the support ticket.
 
-Classify the ticket into one of the following categories:
+Classify the ticket into one of:
 
 - billing_issue
 - integration_issue
@@ -11,17 +11,17 @@ Classify the ticket into one of the following categories:
 - feature_request
 - general_question
 
-Then determine priority:
+Determine priority:
 
 - low
 - medium
 - high
 
-Finally generate a helpful response draft.
+Generate a short response draft (max 2 sentences).
 
 Return ONLY valid JSON.
 
-Example output:
+Example:
 
 {
   "category": "integration_issue",

@@ -27,5 +27,5 @@ FUTURE USAGE
 */
 
 export interface AIProvider {
-    generate(prompt: string): Promise<string>;
+    generate(prompt: string, options?: { tools?: boolean }): Promise<any>;
   }

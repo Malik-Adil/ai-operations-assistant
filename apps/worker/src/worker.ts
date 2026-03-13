@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config({path: "../../.env"});
+
 import { Worker } from "bullmq";
 import { connection } from "@queue/queues";
 import { routeJob } from "./router";
