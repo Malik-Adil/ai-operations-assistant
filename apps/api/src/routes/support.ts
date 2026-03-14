@@ -14,7 +14,7 @@ router.post("/", async (req, res) => {
     customerEmail
   });
 
-  createJob(job.id);
+  await createJob(job.id);
 
 
   res.json({

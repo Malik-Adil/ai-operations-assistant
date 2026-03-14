@@ -16,7 +16,7 @@ export async function routeJob(job: any) {
       return handleAIChatJob(job);
 
     case JobType.SUPPORT_TICKET_ANALYSIS:
-      return handleSupportTicketJob(job);
+      return await handleSupportTicketJob(job);
 
     default:
       console.warn("Unknown job type:", job.name);

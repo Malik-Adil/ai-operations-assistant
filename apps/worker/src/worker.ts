@@ -13,20 +13,20 @@ const worker = new Worker(
     console.log(`Processing job: ${job.name}`);
     console.log("Job data:", job.data);
     
-    await routeJob(job);
+    return await routeJob(job);
   },
   { connection: connection as any }
 );
 
 
 
-worker.on("completed", (job) => {
-  completeJob(job.id, job.data);
+worker.on("completed", async (job, result) => {
+  await completeJob(job.id, result);
   console.log(`Job ${job.id} completed`);
 });
 
-worker.on("failed", (job, err) => {
-  failJob(job.id, err.message);
+worker.on("failed", async (job, err) => {
+  await failJob(job.id, err.message);
   console.error(`Job ${job?.id} failed`);
   console.error("Reason:", err.message);
 });

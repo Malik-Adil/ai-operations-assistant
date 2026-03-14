@@ -3,73 +3,73 @@ FILE
 job-store.ts
 
 WHY IT EXISTS
-Provides a shared in-memory job result storage system that can be
-used by both the API server and worker services. This allows
-background jobs to store execution status and results so they can
-be retrieved later by API endpoints.
+Stores job lifecycle state and results in Redis so both the API
+and Worker processes can read/write the same data.
 
-ARCHITECTURE EXPLANATION
-The system uses a Map to track job lifecycle states.
+ARCHITECTURE
+Each job is stored as a Redis hash:
 
-Job lifecycle:
+job:<jobId>
 
-createJob → job created by API
-startJob → worker begins processing
-completeJob → worker finishes successfully
-failJob → worker fails
-
-The store acts as a temporary job registry.
+Fields:
+- status
+- result
+- error
 
 FUTURE USAGE
-This will later be replaced with a persistent database-backed
-system using Redis or PostgreSQL so job results survive restarts.
+Later we could:
+- add job timelines
+- add analytics
+- move to PostgreSQL if needed
 */
 
-type JobStatus =
-  | "waiting"
-  | "processing"
-  | "completed"
-  | "failed";
+import { connection } from "@queue/queues"
 
-interface JobRecord {
-  jobId: string;
-  status: JobStatus;
-  result?: any;
-  error?: string;
+const redis = connection
+
+export enum JobStatus {
+  WAITING = "waiting",
+  PROCESSING = "processing",
+  COMPLETED = "completed",
+  FAILED = "failed"
 }
 
-const jobStore = new Map<string, JobRecord>();
+export async function createJob(jobId: string) {
+  await redis.hset(`job:${jobId}`, {
+    status: JobStatus.WAITING
+  })
+}
 
-export function createJob(jobId: string) {
-  jobStore.set(jobId, {
+export async function startJob(jobId: string) {
+  await redis.hset(`job:${jobId}`, {
+    status: JobStatus.PROCESSING
+  })
+}
+
+export async function completeJob(jobId: string, result: any) {
+  await redis.hset(`job:${jobId}`, {
+    status: JobStatus.COMPLETED,
+    result: JSON.stringify(result)
+  })
+}
+
+export async function failJob(jobId: string, error: string) {
+  await redis.hset(`job:${jobId}`, {
+    status: JobStatus.FAILED,
+    error
+  })
+}
+
+export async function getJob(jobId: string) {
+  const data = await redis.hgetall(`job:${jobId}`)
+  if (!data || Object.keys(data).length === 0) {
+    return null
+  }
+
+  return {
     jobId,
-    status: "waiting"
-  });
-}
-
-export function startJob(jobId: string) {
-  const job = jobStore.get(jobId);
-  if (!job) return;
-
-  job.status = "processing";
-}
-
-export function completeJob(jobId: string, result: any) {
-  const job = jobStore.get(jobId);
-  if (!job) return;
-
-  job.status = "completed";
-  job.result = result;
-}
-
-export function failJob(jobId: string, error: string) {
-  const job = jobStore.get(jobId);
-  if (!job) return;
-
-  job.status = "failed";
-  job.error = error;
-}
-
-export function getJob(jobId: string) {
-  return jobStore.get(jobId);
+    status: data.status,
+    result: data.result ? JSON.parse(data.result) : undefined,
+    error: data.error
+  }
 }

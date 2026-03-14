@@ -1,29 +1,39 @@
 import { toolRegistry } from "./tools/tool-registry"
-
+import { ExecutionContext } from "./execution/execution-context"
 export class ToolExecutor {
-  async execute(toolName: string, input: any) {
-    console.log(`Executing tool: ${toolName}`)
 
+  async execute(toolName: string, payload: any, context: ExecutionContext) {
     const tool = toolRegistry.get(toolName)
 
+    if (!tool) {
+      throw new Error(`Tool not found: ${toolName}`)
+    }
+
+    console.log(`Executing tool: ${toolName}`)
+  
+
     try {
-      const result = await tool.execute(input)
+      const result = await tool.execute(payload)
 
-      return {
-        success: true,
+      console.log(`Tool success: ${toolName}`)
+      
+      context.actions.push({
         tool: toolName,
-        result
-      }
-    } catch (error: any) {
-      console.error("Tool execution failed:", error)
+        status: "success"
+      })
+      
 
-      return {
-        success: false,
+      return result
+    } catch (error) {
+      console.error(`Tool failed: ${toolName}`, error)
+      
+      context.actions.push({
         tool: toolName,
+        status: "failed",
         error: error.message
-      }
+      })
+      
+      throw error
     }
   }
 }
-
-export const toolExecutor = new ToolExecutor()

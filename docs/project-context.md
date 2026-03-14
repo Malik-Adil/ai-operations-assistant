@@ -1,52 +1,91 @@
 # AI Operations Assistant — Project Context (Updated)
 
-## Project Goal
+## End Goal of the Project
 
-Build a **production-style AI automation platform** to learn modern AI architecture used in real systems.
+The goal of this project is to build a **production-style AI automation platform** similar to systems used by:
 
-The project focuses on understanding:
+* Intercom Fin AI
+* Zapier AI
+* Slack automation
+* Salesforce Einstein
+* OpenAI / Claude agent systems
 
-- AI agents
-- background workers
-- asynchronous processing
-- queue systems
-- tool execution
-- structured AI outputs
-- automation workflows
-- RAG (future)
+The final platform will be capable of:
 
-The system is designed as a **learning project that mirrors real AI SaaS infrastructure**.
+```
+Event
+↓
+AI Analysis
+↓
+Automation Decision
+↓
+Tool Execution
+↓
+Workflow Orchestration
+↓
+Knowledge Retrieval (RAG)
+↓
+Agent Reasoning
+↓
+Automation Dashboard
+```
+
+This project is designed as a **learning system that mirrors real AI SaaS architecture**.
 
 ---
 
-# System Architecture
+# Current System Architecture
 
-The system follows an **asynchronous worker architecture**.
+The system now implements a **complete AI automation pipeline**.
 
-Client  
-↓  
-API Server  
-↓  
-Queue Producer  
-↓  
-Redis Queue (BullMQ)  
-↓  
-Worker  
-↓  
-Job Router  
-↓  
-Job Handler  
-↓  
-AI Service  
-↓  
-AI Provider  
-↓  
-LLM API (Claude)
-
-Important design rule:
-
-Heavy processing **never runs inside the API**.  
-All AI processing happens in **background workers**.
+```
+Client Request
+      │
+      ▼
+API Server (Express)
+      │
+      ▼
+Queue Producer
+      │
+      ▼
+Redis Queue (BullMQ)
+      │
+      ▼
+Worker
+      │
+      ▼
+Job Router
+      │
+      ▼
+Job Handler
+      │
+      ▼
+AI Service
+      │
+      ▼
+Claude API
+      │
+      ▼
+Structured AI Result
+      │
+      ▼
+Rules Engine
+      │
+      ▼
+Tool Executor
+      │
+      ▼
+Automation Tool
+      │
+      ▼
+Execution Context
+      │
+      ▼
+Redis Job Store
+      │
+      ▼
+API Result Retrieval
+```
 
 ---
 
@@ -54,42 +93,31 @@ All AI processing happens in **background workers**.
 
 ## Monorepo
 
-- Turborepo
-- pnpm workspaces
-
----
+* Turborepo
+* pnpm workspaces
 
 ## Backend
 
-- Node.js
-- TypeScript
-- Express
+* Node.js
+* TypeScript
+* Express
 
----
+## Queue System
 
-## Frontend
-
-- Next.js
-- React
-- TailwindCSS
-
----
-
-## Infrastructure
-
-- Redis
-- BullMQ
-- Bull Board (Queue Monitoring)
-
----
+* BullMQ
+* Redis
 
 ## AI Layer
 
-- Claude API (Anthropic)
-- AI Service abstraction
-- Prompt management
-- Structured outputs
-- Provider factory
+* Claude API (Anthropic)
+* Structured outputs
+* Zod validation
+
+## Frontend
+
+* Next.js
+* React
+* TailwindCSS
 
 ---
 
@@ -103,7 +131,6 @@ apps
 ├── api
 │   ├── routes
 │   │   ├── ai.ts
-│   │   ├── jobs.ts
 │   │   ├── jobs-result.ts
 │   │   └── support-ticket.ts
 │   │
@@ -117,8 +144,8 @@ apps
     └── src
         │
         ├── handlers
-        │   ├── ai-chat.handler.ts
         │   ├── support-ticket.handler.ts
+        │   ├── ai-chat.handler.ts
         │   └── test.handler.ts
         │
         ├── router.ts
@@ -144,9 +171,20 @@ packages
 │       ├── schemas
 │       │   └── support-ticket.schema.ts
 │       │
+│       ├── automation
+│       │   ├── rule.ts
+│       │   ├── rules-engine.ts
+│       │   └── rules
+│       │       ├── support-ticket.rules.ts
+│       │       └── rules-registry.ts
+│       │
+│       ├── execution
+│       │   └── execution-context.ts
+│       │
 │       └── tools
 │           ├── tool.ts
 │           ├── tool-registry.ts
+│           ├── tool-executor.ts
 │           └── create-task.tool.ts
 │
 ├── queue
@@ -168,9 +206,11 @@ packages
 
 # Queue System
 
-Technology:
+Queue technology:
 
+```
 BullMQ + Redis
+```
 
 Queue name:
 
@@ -178,374 +218,316 @@ Queue name:
 ai-jobs
 ```
 
-Capabilities:
-
-- job retries
-- exponential backoff
-- failure handling
-- queue monitoring
-- async processing
-
-Queue dashboard:
+Worker lifecycle:
 
 ```
-http://localhost:4000/admin/queues
+createJob
+startJob
+completeJob
+failJob
 ```
 
----
-
-# Worker System
-
-Worker responsibilities:
-
-- listen to queue
-- route jobs
-- execute handlers
-- log results
-
-Handlers implemented:
+Worker events handled:
 
 ```
-support-ticket.handler.ts
-test.handler.ts
-ai-chat.handler.ts
+active
+completed
+failed
+stalled
 ```
 
 ---
 
-# AI Provider System
+# AI Processing Pipeline
 
-Architecture:
-
-AI Service  
-↓  
-Provider Factory  
-↓  
-AI Provider Interface  
-↓  
-Claude Provider / Mock Provider
-
-Environment configuration:
+Support ticket flow:
 
 ```
-AI_PROVIDER=claude
-ANTHROPIC_API_KEY=sk-ant-xxxx
-```
-
----
-
-# Prompt System
-
-Location:
-
-```
-packages/ai/prompts/support-ticket.prompt.ts
-```
-
-Purpose:
-
-Centralized prompt templates for AI operations.
-
-Example prompt behavior:
-
-- classify support ticket
-- determine priority
-- generate response draft
-- return JSON
-
----
-
-# Structured Output System
-
-AI responses return **machine-readable JSON**.
-
-Example output:
-
-```json
-{
-  "category": "integration_issue",
-  "priority": "high",
-  "responseDraft": "Please verify your Shopify API credentials."
-}
-```
-
-Validation:
-
-```
+POST /support-ticket
+      │
+      ▼
+API creates queue job
+      │
+      ▼
+Worker processes job
+      │
+      ▼
+AI analyzes ticket
+      │
+      ▼
+Claude returns structured JSON
+      │
+      ▼
 Zod schema validation
 ```
 
-Location:
+Example AI output:
 
 ```
-packages/ai/schemas/support-ticket.schema.ts
+{
+  category: "integration_issue",
+  priority: "high",
+  responseDraft: "Please verify your Shopify API credentials."
+}
 ```
 
 ---
 
-# Claude API Integration
+# Automation System
 
-Provider location:
+The platform now supports **AI-driven automation decisions**.
 
-```
-packages/ai/providers/claude-provider.ts
-```
-
-Model:
+Workflow:
 
 ```
-claude-3-haiku-latest
+AI Result
+   │
+   ▼
+Rules Engine
+   │
+   ▼
+Automation Rule Triggered
+   │
+   ▼
+Tool Executor
+   │
+   ▼
+Tool Execution
 ```
 
-Typical configuration:
+Example rule:
 
 ```
-max_tokens: 300
+IF priority === "high"
+THEN create_task
 ```
-
-Optimization:
-
-- short prompts
-- short responses
-- avoid unnecessary tools
 
 ---
 
-# Issues Solved During Development
+# Tool System
 
-### Markdown JSON Responses
+Tools run through the **Tool Executor**.
 
-Claude sometimes returns:
+Example tool:
 
-```json
-{ ... }
+```
+create_task
 ```
 
-Solution:
+Example execution:
 
-Strip markdown fences before `JSON.parse`.
-
----
-
-### Token Limit Truncation
-
-Long responses caused incomplete JSON.
-
-Solution:
-
-- increase `max_tokens`
-- limit response length in prompt
+```
+Executing tool: create_task
+Creating task: Handle high priority support ticket
+Tool success: create_task
+```
 
 ---
 
-### Retry Multiplying Token Usage
+# Execution Context
 
-BullMQ retries caused multiple AI calls.
+Each job now tracks automation actions using an **execution context**.
 
 Example:
 
 ```
-attempts: 3
+actions: [
+  {
+    tool: "create_task",
+    status: "success"
+  }
+]
 ```
 
-Temporary development fix:
+Purpose:
 
-```
-attempts: 1
-```
+* audit automation
+* debug workflows
+* visualize automation actions
 
 ---
 
-# Current Working Pipeline
+# Distributed Job Storage
 
-Support ticket pipeline:
+Job results are now stored in **Redis**, allowing API and Worker processes to share state.
 
-POST /support-ticket  
-↓  
-API  
-↓  
-Queue  
-↓  
-Worker  
-↓  
-support-ticket.handler  
-↓  
-AI Service  
-↓  
-Claude API  
-↓  
-JSON parsing  
-↓  
-Zod validation  
-↓  
-Structured result
-
-Example worker output:
+Redis key format:
 
 ```
-AI structured result:
+job:<jobId>
+```
+
+Example Redis record:
+
+```
+status = completed
+result = { ticketId, aiResult, actions }
+```
+
+Example stored job:
+
+```
 {
-  category: "integration_issue",
-  priority: "high",
-  responseDraft: "We'd like to help you connect your Shopify store..."
+  jobId: "38",
+  status: "completed",
+  result: {
+    ticketId: "T-1001",
+    aiResult: { category: "integration_issue", priority: "high" },
+    actions: [{ tool: "create_task", status: "success" }]
+  }
 }
 ```
 
 ---
 
-# Tool System (Foundation Built)
+# Current API Endpoints
 
-Components created:
+### Submit Ticket
 
-- Tool interface
-- Tool registry
-- Tool executor
-- create_task tool
+```
+POST /support-ticket
+```
 
-Example future tools:
+Response:
 
-- create_task
-- send_email
-- query_database
-- post_to_slack
-
-Tools are currently **disabled for classification tasks** to reduce token usage.
-
----
-
-# System Status
-
-Infrastructure completed:
-
-- monorepo
-- API server
-- worker service
-- queue system
-- job routing
-- job handlers
-- schema validation
-- AI provider abstraction
-- Claude integration
-- prompt management
-- structured outputs
-- tool architecture
-- job result storage
-- queue monitoring
+```
+{
+  status: "queued",
+  jobId: "38"
+}
+```
 
 ---
 
-# Current Capability
+### Get Job Result
 
-The system supports:
+```
+GET /jobs/:id
+```
 
-- AI classification
-- structured analysis
-- background AI jobs
-- async processing
-- worker execution
-
-The platform is now a **working AI analysis system**.
+Returns job result from Redis.
 
 ---
 
-# Next Feature
+# Current System Capabilities
 
-## Automation Rules Engine
+The platform now supports:
 
-Goal:
+* AI ticket classification
+* background job processing
+* automation rule evaluation
+* tool execution
+* execution tracking
+* Redis-based job storage
+* API result retrieval
 
-Convert AI results into actions.
+The system is now a **working AI automation backend**.
 
-Example workflow:
+---
 
-Support ticket  
-↓  
-AI classification  
-↓  
-priority = high  
-↓  
-create_task  
-↓  
-assign engineer
+# Next Development Step
 
-Architecture:
+## Build Automation Dashboard (Next.js)
 
-AI Result  
-↓  
-Rules Engine  
-↓  
-Tool Execution  
-↓  
-Automation Action
+Create a dashboard that visualizes automation jobs.
+
+Example UI:
+
+```
+Automation Jobs
+
+Job ID | Ticket | Priority | Tool | Status
+------------------------------------------------
+38     | T-1001 | high     | create_task | success
+```
+
+The dashboard will call:
+
+```
+GET /jobs/:id
+```
+
+and later:
+
+```
+GET /jobs
+```
+
+This will make the system **observable and interactive**.
 
 ---
 
 # Future Features
 
-### AI Agents
+## Workflow Automation
 
-Multi-step reasoning:
-
-AI  
-↓  
-tool  
-↓  
-AI  
-↓  
-tool  
-
----
-
-### Workflow Automation
+Multi-step workflows.
 
 Example:
 
-email received  
-↓  
-AI classification  
-↓  
-create ticket  
-↓  
-send reply  
+```
+Ticket Received
+↓
+Create Task
+↓
+Send Email
+↓
+Slack Notification
+```
 
 ---
 
-### RAG System
+## AI Agents
+
+Agent reasoning loop:
+
+```
+AI
+↓
+tool
+↓
+AI
+↓
+tool
+```
+
+---
+
+## RAG Knowledge System
 
 Components:
 
-- document ingestion
-- embeddings
-- vector database
-- context retrieval
+* document ingestion
+* embeddings
+* vector database
+* context retrieval
 
 ---
 
-### Memory System
+## Memory System
 
-Allow AI to remember previous interactions.
+Allow AI to remember previous events and conversations.
 
 ---
 
-# Current Next Task
+# Current Development Status
 
-Implement the **Automation Rules Engine**.
-
-Example rule:
+The platform now successfully executes:
 
 ```
-if priority === "high"
-   create_task()
+Event
+↓
+AI analysis
+↓
+Automation rule
+↓
+Tool execution
+↓
+Action tracking
+↓
+Distributed result storage
+↓
+API retrieval
 ```
 
-This will transform the system from:
-
-```
-AI analysis platform
-```
-
-into:
-
-```
-AI automation platform
-```
+The next milestone is building the **Automation Dashboard** to visualize AI operations.
