@@ -1,16 +1,27 @@
 # AI Operations Assistant — Project Context (Updated)
 
-## End Goal of the Project
+## Project Goal
 
-The goal of this project is to build a **production-style AI automation platform** similar to systems used by:
+The goal of this project is to build a **production-style AI automation platform** that can:
+
+* receive events from external systems
+* analyze events using AI
+* make automation decisions
+* execute tools
+* orchestrate workflows
+* provide an operations dashboard
+
+The architecture is inspired by platforms such as:
 
 * Intercom Fin AI
-* Zapier AI
-* Slack automation
+* Zapier
+* Slack Automation
 * Salesforce Einstein
-* OpenAI / Claude agent systems
+* AI Agent systems
 
-The final platform will be capable of:
+The system converts **events into automated actions**.
+
+Example flow:
 
 ```
 Event
@@ -21,103 +32,43 @@ Automation Decision
 ↓
 Tool Execution
 ↓
-Workflow Orchestration
+Workflow
 ↓
-Knowledge Retrieval (RAG)
-↓
-Agent Reasoning
-↓
-Automation Dashboard
-```
-
-This project is designed as a **learning system that mirrors real AI SaaS architecture**.
-
----
-
-# Current System Architecture
-
-The system now implements a **complete AI automation pipeline**.
-
-```
-Client Request
-      │
-      ▼
-API Server (Express)
-      │
-      ▼
-Queue Producer
-      │
-      ▼
-Redis Queue (BullMQ)
-      │
-      ▼
-Worker
-      │
-      ▼
-Job Router
-      │
-      ▼
-Job Handler
-      │
-      ▼
-AI Service
-      │
-      ▼
-Claude API
-      │
-      ▼
-Structured AI Result
-      │
-      ▼
-Rules Engine
-      │
-      ▼
-Tool Executor
-      │
-      ▼
-Automation Tool
-      │
-      ▼
-Execution Context
-      │
-      ▼
-Redis Job Store
-      │
-      ▼
-API Result Retrieval
+Dashboard Visibility
 ```
 
 ---
 
-# Tech Stack
+# Current Tech Stack
 
 ## Monorepo
 
-* Turborepo
-* pnpm workspaces
+Turborepo
+pnpm workspaces
 
 ## Backend
 
-* Node.js
-* TypeScript
-* Express
+Node.js
+Express
+TypeScript
 
 ## Queue System
 
-* BullMQ
-* Redis
+BullMQ
+Redis
 
 ## AI Layer
 
-* Claude API (Anthropic)
-* Structured outputs
-* Zod validation
+Claude API
+Structured outputs
+Zod validation
 
 ## Frontend
 
-* Next.js
-* React
-* TailwindCSS
+Next.js (App Router)
+React
+TailwindCSS
+shadcn/ui
 
 ---
 
@@ -129,405 +80,494 @@ ai-operations-assistant
 apps
 │
 ├── api
-│   ├── routes
-│   │   ├── ai.ts
-│   │   ├── jobs-result.ts
-│   │   └── support-ticket.ts
-│   │
-│   ├── bullboard.ts
+│   ├── auth
+│   ├── workspace
+│   ├── account
+│   ├── middleware
 │   └── server.ts
 │
 ├── web
 │   └── Next.js dashboard
 │
 └── worker
-    └── src
-        │
-        ├── handlers
-        │   ├── support-ticket.handler.ts
-        │   ├── ai-chat.handler.ts
-        │   └── test.handler.ts
-        │
-        ├── router.ts
-        └── worker.ts
-
+    └── job processing
 
 packages
 │
 ├── ai
-│   └── src
-│       │
-│       ├── ai-service.ts
-│       │
-│       ├── providers
-│       │   ├── ai-provider.ts
-│       │   ├── mock-provider.ts
-│       │   ├── claude-provider.ts
-│       │   └── provider-factory.ts
-│       │
-│       ├── prompts
-│       │   └── support-ticket.prompt.ts
-│       │
-│       ├── schemas
-│       │   └── support-ticket.schema.ts
-│       │
-│       ├── automation
-│       │   ├── rule.ts
-│       │   ├── rules-engine.ts
-│       │   └── rules
-│       │       ├── support-ticket.rules.ts
-│       │       └── rules-registry.ts
-│       │
-│       ├── execution
-│       │   └── execution-context.ts
-│       │
-│       └── tools
-│           ├── tool.ts
-│           ├── tool-registry.ts
-│           ├── tool-executor.ts
-│           └── create-task.tool.ts
-│
 ├── queue
-│   └── src
-│       │
-│       ├── redis.ts
-│       ├── producer.ts
-│       ├── job-types.ts
-│       └── job-schemas.ts
-│
-├── job-store
-│   └── src
-│       │
-│       ├── job-store.ts
-│       └── index.ts
+└── job-store
 ```
 
 ---
 
-# Queue System
+# Completed System Features
 
-Queue technology:
+## 1. Landing Page
 
-```
-BullMQ + Redis
-```
+A production-ready SaaS landing page was created.
 
-Queue name:
+Features include:
 
-```
-ai-jobs
-```
+* hero section
+* features
+* integrations
+* pricing
+* call to action
+* modern SaaS layout
 
-Worker lifecycle:
-
-```
-createJob
-startJob
-completeJob
-failJob
-```
-
-Worker events handled:
+Purpose:
 
 ```
-active
-completed
-failed
-stalled
+User acquisition
 ```
 
 ---
 
-# AI Processing Pipeline
+# 2. OAuth Authentication
 
-Support ticket flow:
+Users sign in using **Google OAuth**.
 
-```
-POST /support-ticket
-      │
-      ▼
-API creates queue job
-      │
-      ▼
-Worker processes job
-      │
-      ▼
-AI analyzes ticket
-      │
-      ▼
-Claude returns structured JSON
-      │
-      ▼
-Zod schema validation
-```
-
-Example AI output:
+Flow:
 
 ```
-{
-  category: "integration_issue",
-  priority: "high",
-  responseDraft: "Please verify your Shopify API credentials."
-}
+User clicks login
+↓
+Redirect to Google OAuth
+↓
+User grants permission
+↓
+Backend receives profile
+↓
+User account created (if new)
+↓
+JWT session created
+↓
+Redirect to onboarding
 ```
 
----
-
-# Automation System
-
-The platform now supports **AI-driven automation decisions**.
-
-Workflow:
+Auth endpoint:
 
 ```
-AI Result
-   │
-   ▼
-Rules Engine
-   │
-   ▼
-Automation Rule Triggered
-   │
-   ▼
-Tool Executor
-   │
-   ▼
-Tool Execution
+GET /auth/google
 ```
 
-Example rule:
+Callback:
 
 ```
-IF priority === "high"
-THEN create_task
+GET /auth/google/callback
+```
+
+Session token:
+
+```
+auth_token cookie
 ```
 
 ---
 
-# Tool System
+# 3. Workspace Onboarding
 
-Tools run through the **Tool Executor**.
+After OAuth login:
 
-Example tool:
+New users must create a workspace.
 
-```
-create_task
-```
+Form collects:
 
-Example execution:
+* company name
+* company website
+* industry
+* company size
 
-```
-Executing tool: create_task
-Creating task: Handle high priority support ticket
-Tool success: create_task
-```
-
----
-
-# Execution Context
-
-Each job now tracks automation actions using an **execution context**.
-
-Example:
+Endpoint:
 
 ```
-actions: [
-  {
-    tool: "create_task",
-    status: "success"
-  }
-]
+POST /workspace/create
 ```
 
 Purpose:
 
-* audit automation
-* debug workflows
-* visualize automation actions
-
----
-
-# Distributed Job Storage
-
-Job results are now stored in **Redis**, allowing API and Worker processes to share state.
-
-Redis key format:
-
 ```
-job:<jobId>
-```
-
-Example Redis record:
-
-```
-status = completed
-result = { ticketId, aiResult, actions }
-```
-
-Example stored job:
-
-```
-{
-  jobId: "38",
-  status: "completed",
-  result: {
-    ticketId: "T-1001",
-    aiResult: { category: "integration_issue", priority: "high" },
-    actions: [{ tool: "create_task", status: "success" }]
-  }
-}
+Create SaaS workspace (tenant)
 ```
 
 ---
 
-# Current API Endpoints
+# 4. Workspace Creation UX
 
-### Submit Ticket
+On workspace creation the frontend shows a **professional loader screen**.
+
+Features:
+
+* circular progress loader
+* animated progress
+* rotating status messages
+
+Example messages:
 
 ```
-POST /support-ticket
+Initializing workspace
+Preparing automation environment
+Configuring AI engine
+Almost ready
 ```
 
-Response:
+Once complete:
 
 ```
-{
-  status: "queued",
-  jobId: "38"
-}
+Redirect → /dashboard
 ```
 
 ---
 
-### Get Job Result
+# 5. Dashboard Layout
+
+The dashboard now uses a **professional SaaS layout**.
+
+Layout:
 
 ```
-GET /jobs/:id
+Sidebar
+Topbar
+Main Content
 ```
 
-Returns job result from Redis.
+Sidebar navigation:
+
+```
+Dashboard
+Automations
+Integrations
+Jobs
+Logs
+Settings
+```
+
+Topbar shows:
+
+```
+Page title
+User avatar
+User name
+```
 
 ---
 
-# Current System Capabilities
+# 6. Profile Page
 
-The platform now supports:
+Users can manage their account.
 
-* AI ticket classification
-* background job processing
-* automation rule evaluation
-* tool execution
-* execution tracking
-* Redis-based job storage
-* API result retrieval
+Route:
 
-The system is now a **working AI automation backend**.
+```
+/dashboard/profile
+```
+
+Features:
+
+* profile information
+* OAuth provider
+* avatar display
 
 ---
 
-# Next Development Step
+# 7. Delete Account
 
-## Build Automation Dashboard (Next.js)
+Users can delete their account.
 
-Create a dashboard that visualizes automation jobs.
+Frontend confirmation dialog.
 
-Example UI:
-
-```
-Automation Jobs
-
-Job ID | Ticket | Priority | Tool | Status
-------------------------------------------------
-38     | T-1001 | high     | create_task | success
-```
-
-The dashboard will call:
+Endpoint:
 
 ```
-GET /jobs/:id
+DELETE /account/delete
 ```
 
-and later:
+Backend behavior:
 
 ```
-GET /jobs
+Verify JWT
+Delete user from platform
+Remove OAuth association
+Clear auth cookie
 ```
 
-This will make the system **observable and interactive**.
+Important:
 
----
+Deleting account **does not delete Google account**.
 
-# Future Features
-
-## Workflow Automation
-
-Multi-step workflows.
-
-Example:
+If the user logs in again:
 
 ```
-Ticket Received
+Google OAuth
 ↓
-Create Task
+User not found
 ↓
-Send Email
+System treats as new user
 ↓
-Slack Notification
+Onboarding
 ```
 
 ---
 
-## AI Agents
+# 8. Logout
 
-Agent reasoning loop:
+Users can logout from the dashboard.
+
+Endpoint:
 
 ```
-AI
-↓
-tool
-↓
-AI
-↓
-tool
+POST /auth/logout
+```
+
+Behavior:
+
+```
+Clear auth_token cookie
+Redirect to login
 ```
 
 ---
 
-## RAG Knowledge System
+# Current Authentication Flow
 
-Components:
-
-* document ingestion
-* embeddings
-* vector database
-* context retrieval
+```
+Landing Page
+↓
+Login
+↓
+Google OAuth
+↓
+User created if new
+↓
+JWT session
+↓
+Onboarding (if no workspace)
+↓
+Workspace created
+↓
+Dashboard
+```
 
 ---
 
-## Memory System
+# Current System Status
 
-Allow AI to remember previous events and conversations.
+The platform now includes:
+
+```
+Landing page
+OAuth authentication
+Workspace onboarding
+Workspace loader UX
+Dashboard layout
+Profile page
+Delete account
+Logout
+```
+
+This forms the **SaaS foundation layer**.
 
 ---
 
-# Current Development Status
+# Next Development Goal
 
-The platform now successfully executes:
+The next major milestone is:
+
+```
+Persist user and workspace data in a database
+```
+
+Currently the backend uses **in-memory storage**.
+
+This causes a problem:
+
+```
+User logs in again
+↓
+System forgets previous data
+↓
+Onboarding repeats
+```
+
+We must store data permanently.
+
+---
+
+# Next System to Build
+
+## Database Layer
+
+Introduce a database such as:
+
+```
+PostgreSQL
+```
+
+Add tables:
+
+```
+users
+organizations
+memberships
+```
+
+Relationships:
+
+```
+User
+  │
+  │ belongs to
+  ▼
+Organization (Workspace)
+```
+
+Example schema:
+
+```
+users
+id
+email
+name
+avatar
+provider
+provider_id
+
+organizations
+id
+name
+website
+industry
+size
+
+memberships
+user_id
+organization_id
+role
+```
+
+---
+
+# Desired Login Behavior
+
+Once database persistence is added:
+
+```
+User logs in
+↓
+Check database
+↓
+User exists
+↓
+Load workspace
+↓
+Redirect dashboard
+```
+
+Only **new users** should see onboarding.
+
+---
+
+# Next Development Tasks
+
+Next tasks in order:
+
+1️⃣ Setup PostgreSQL database
+2️⃣ Add database client (Prisma recommended)
+3️⃣ Create user table
+4️⃣ Store OAuth users in DB
+5️⃣ Create organization table
+6️⃣ Create membership table
+7️⃣ Modify login flow to check DB
+
+---
+
+# Future Platform Features
+
+After database persistence the next major systems will be:
+
+## Integrations
+
+Connect external systems:
+
+```
+Slack
+Shopify
+Zendesk
+Stripe
+```
+
+---
+
+## Event Ingestion
+
+Receive events:
+
+```
+support ticket
+webhook
+email
+message
+```
+
+---
+
+## Automation Rules
+
+Define rules:
+
+```
+IF priority = high
+THEN create task
+```
+
+---
+
+## Tool Execution
+
+Example tools:
+
+```
+create_task
+send_email
+send_slack
+update_crm
+```
+
+---
+
+## Automation Dashboard
+
+Monitor jobs:
+
+```
+Job ID
+Event
+AI Result
+Tool
+Status
+```
+
+---
+
+# Long-Term Vision
+
+Final platform architecture:
 
 ```
 Event
 ↓
-AI analysis
+Queue
 ↓
-Automation rule
+AI Analysis
 ↓
-Tool execution
+Rules Engine
 ↓
-Action tracking
+Tool Execution
 ↓
-Distributed result storage
+Workflow
 ↓
-API retrieval
+Dashboard
 ```
 
-The next milestone is building the **Automation Dashboard** to visualize AI operations.
+This becomes a **complete AI operations automation platform**.
